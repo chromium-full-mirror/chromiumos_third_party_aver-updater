@@ -1,0 +1,10 @@
+# Copyright 2018 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+SUBSYSTEM=="video4linux", ACTION=="add", ENV{ID_VENDOR_ID}=="2574", ENV{ID_MODEL_ID}=="09**", \
+OWNER="cfm-firmware-updaters", GROUP="cfm-firmware-updaters", MODE="0664"
+
+ACTION=="add", KERNEL=="hidraw*", SUBSYSTEM=="hidraw", DEVPATH=="*:2574:0901*|*:2574:0910*",  \
+OWNER="cfm-firmware-updaters", GROUP="cfm-firmware-updaters", MODE="0664", \
+RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true"
