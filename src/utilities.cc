@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium OS Authors. All rights reserved.
+// Copyright 2019 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,29 +7,31 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fstream>
-#include <sstream>
 #include <iostream>
+#include <sstream>
 
 #include <base/files/dir_reader_posix.h>
 #include <base/files/file.h>
 #include <base/files/file_util.h>
+#include <base/files/file_enumerator.h>
 #include <base/strings/string_number_conversions.h>
 #include <base/strings/string_split.h>
 #include <base/strings/string_util.h>
 
 namespace {
+const char kAverLockFile[] = "/run/lock/aver-updater.lock";
+const char kVersionNumberTokens[] = "0123456789.";
+
 constexpr unsigned int kDefaultVersionComponentCount = 4;
-constexpr unsigned int kReceiveDataStartPosition = 3;
-const char kAverLockFile[] = "/tmp/aver-updater.lock";
 
 std::vector<std::string> SplitString(std::string string,
-                                    std::string delimiters) {
+                                     std::string delimiters) {
   return base::SplitString(string, delimiters, base::TRIM_WHITESPACE,
-                        base::SPLIT_WANT_NONEMPTY);
+                           base::SPLIT_WANT_NONEMPTY);
 }
 }  // namespace
 
-bool GetDirectoryContents(std::string directory,
+bool GetDirectoryContents(const std::string& directory,
                           std::vector<std::string>* contents) {
   base::DirReaderPosix reader(directory.c_str());
   if (!reader.IsValid())
@@ -40,9 +42,20 @@ bool GetDirectoryContents(std::string directory,
   return true;
 }
 
-bool ReadFirmwareFileToBuffer(base::FilePath file_path, std::vector<char> *buffer) {
+bool FindIntermediateCompressedFile(const base::FilePath& folder,
+                                    const std::string& firmware_name) {
+  int types = base::FileEnumerator::FILES;
+  base::FileEnumerator file_enum(folder, false, types, firmware_name);
+  base::FilePath result = file_enum.Next();
+  if (result.empty())
+    return false;
+  return true;
+}
+
+bool ReadFirmwareFileToBuffer(const base::FilePath& file_path,
+                              std::vector<char>* buffer) {
   int64_t size_of_file;
-  if (!base::GetFileSize( file_path, &size_of_file)) {
+  if (!base::GetFileSize(file_path, &size_of_file)) {
     LOG(ERROR) << "Can't get firmware file size.";
     return false;
   }
@@ -57,9 +70,11 @@ bool ReadFirmwareFileToBuffer(base::FilePath file_path, std::vector<char> *buffe
   return true;
 }
 
-int CompareVersions(std::string version1, std::string version2) {
-  std::string dev_ver = version1.substr(0, version1.find_first_not_of("0123456789."));
-  std::string img_ver = version2.substr(0, version2.find_first_not_of("0123456789."));
+int CompareVersions(const std::string& version1, const std::string& version2) {
+  std::string dev_ver =
+    version1.substr(0, version1.find_first_not_of(kVersionNumberTokens));
+  std::string img_ver =
+    version2.substr(0, version2.find_first_not_of(kVersionNumberTokens));
   std::vector<std::string> first_tokens = SplitString(dev_ver, ".");
   std::vector<std::string> second_tokens = SplitString(img_ver, ".");
 
@@ -88,8 +103,9 @@ int CompareVersions(std::string version1, std::string version2) {
 }
 
 bool LockUpdater() {
-  int lockfile = open(kAverLockFile, O_WRONLY | O_CREAT, 0664);
-  if (lockfile < 0)
+  int lock = open(kAverLockFile, O_WRONLY | O_CREAT |
+                  O_NOFOLLOW | O_CLOEXEC |  O_TRUNC, 0664);
+  if (lock < 0)
     return false;
 
   struct flock fl;
@@ -100,15 +116,15 @@ bool LockUpdater() {
   // When the process runs, the file is locked.
   // And release the lock when the process exits.
   // The next process can open file and lock it again.
-  return fcntl(lockfile, F_SETLK, &fl) == 0;
+  return fcntl(lock, F_SETLK, &fl) == 0;
 }
 
-bool ReadFileContent(std::string filepath, std::string* output) {
-  if (filepath.empty())
+bool ReadFileContent(const base::FilePath& input_file_path,
+                     std::string* output) {
+  if (input_file_path.empty())
     return false;
 
   base::File::Info info;
-  base::FilePath input_file_path(filepath.c_str());
   GetFileInfo(input_file_path, &info);
   if (info.size <= 0)
     return false;
@@ -121,7 +137,7 @@ bool ReadFileContent(std::string filepath, std::string* output) {
   return result;
 }
 
-bool ConvertHexStringToInt(std::string hex_string, int* output_value) {
+bool ConvertHexStringToInt(const std::string& hex_string, int* output_value) {
   if (hex_string.empty())
     return false;
   std::stringstream string_stream;
@@ -133,15 +149,17 @@ bool ConvertHexStringToInt(std::string hex_string, int* output_value) {
   return true;
 }
 
-bool VerifyDeviceResponse(std::vector<char> hid_return_msg,
-                                std::string isp_progress_word) {
-  if (hid_return_msg.size() < isp_progress_word.size() + kReceiveDataStartPosition) {
-    LOG(ERROR) << "The hid_return_msg_ size is too small:" << hid_return_msg.size();
+bool VerifyDeviceResponse(const std::vector<char>& hid_return_msg,
+                          const std::string& isp_progress_word,
+                          uint32_t start_position) {
+  if (hid_return_msg.size() < isp_progress_word.size() + start_position) {
+    LOG(ERROR) << "The hid_return_msg size is too small:"
+               << hid_return_msg.size();
     return false;
   }
 
   if (std::equal(isp_progress_word.begin(), isp_progress_word.end(),
-      hid_return_msg.begin() + kReceiveDataStartPosition))
+                 hid_return_msg.begin() + start_position))
     return true;
   else
     return false;

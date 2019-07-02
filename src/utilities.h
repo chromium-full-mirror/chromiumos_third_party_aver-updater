@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium OS Authors. All rights reserved.
+// Copyright 2019 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -17,8 +17,18 @@
  * @param contents Ouput vector of the content paths.
  * @return true if succeeded, false otherwise.
  */
-bool GetDirectoryContents(std::string directory,
+bool GetDirectoryContents(const std::string& directory,
                           std::vector<std::string>* contents);
+
+/**
+ * @brief Finds intermediate compressed firmware file.
+ * The intermediate compressed firmware files are divided into video and audio parts.
+ * @param folder Target folder we mant to search.
+ * @param firmware Target firmware we want to find.
+ * @return true for find the file, false for failed.
+ */
+bool FindIntermediateCompressedFile(const base::FilePath& folder,
+                                    const std::string& firmware_name);
 
 /**
  * @brief Reads binary file content to buffer.
@@ -26,7 +36,8 @@ bool GetDirectoryContents(std::string directory,
  * @param buffer It's a buffer to fill firmware.
  * @return buffer from reading. Buffer is empty if read failed.
  */
-bool ReadFirmwareFileToBuffer(base::FilePath file_path, std::vector<char> *buffer);
+bool ReadFirmwareFileToBuffer(const base::FilePath& file_path,
+                              std::vector<char>* buffer);
 
 /**
  * @brief Compares 2 version strings in format major.minor.build or major.minor.
@@ -34,7 +45,7 @@ bool ReadFirmwareFileToBuffer(base::FilePath file_path, std::vector<char> *buffe
  * @param version2 The version string 2.
  * @return 0 equal, -1 if version1 < version2 or 1 if version1 > version2.
  */
-int CompareVersions(std::string version1, std::string version2);
+int CompareVersions(const std::string& version1, const std::string& version2);
 
 /**
  * @brief Locks this updater to have only 1 instance running.
@@ -45,11 +56,11 @@ bool LockUpdater();
 
 /**
  * @brief Reads file contents.
- * @param filepath The file path to read.
+ * @param input_file_path The file path to read.
  * @param output Output string from reading.
  * @return true if read ok, false otherwise.
  */
-bool ReadFileContent(std::string filepath, std::string* output);
+bool ReadFileContent(const base::FilePath& input_file_path, std::string* output);
 
 /**
  * @brief Converts hex string to int.
@@ -57,15 +68,16 @@ bool ReadFileContent(std::string filepath, std::string* output);
  * @param output_value The output int value.
  * @return false if convert failed, true otherwise.
  */
-bool ConvertHexStringToInt(std::string hex_string, int* output_value);
+bool ConvertHexStringToInt(const std::string& hex_string, int* output_value);
 
 /**
  * @brief Verify hid device response.
  * @param hid_return_msg The msg is from hid device.
  * @param isp_progress_word Expected ISP progress word.
+ * @param start_position Command start position.
  * @return true if succeeded, false otherwise.
  */
-bool VerifyDeviceResponse(std::vector<char> hid_return_msg,
-                                std::string isp_progress_word);
-
+bool VerifyDeviceResponse(const std::vector<char>& hid_return_msg,
+                          const std::string& isp_progress_word,
+                          uint32_t start_position);
 #endif  // SRC_UTILITIES_H_
