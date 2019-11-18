@@ -54,7 +54,8 @@ class ModelOneDevice : public UsbDevice {
    * @brief Constructor.
    */
   explicit ModelOneDevice(const std::string& device_name,
-                          const std::string& dev_path);
+                          const std::string& dev_path,
+                          const std::string& fw_mid_name);
   ~ModelOneDevice() override;
 
   /**
@@ -65,9 +66,10 @@ class ModelOneDevice : public UsbDevice {
 
   /**
    * @brief Performs firmware update.
+   * @param tmp_path Temporary folder path.
    * @return NO_ERROR if updated ok, error code otherwise.
    */
-  AverStatus PerformUpdate() override;
+  AverStatus PerformUpdate(const base::FilePath& tmp_path) override;
 
   /**
    * @brief Gets the device version.
@@ -136,12 +138,16 @@ class ModelOneDevice : public UsbDevice {
   std::string device_name_;
   // Hid firmware device path.
   std::string device_path_;
+  // Firmware middle name.
+  std::string firmware_middle_name_;
   // Messages return from hid device.
   std::vector<char> hid_return_msg_;
   // File descriptor is hidraw device fd.
   base::ScopedFD file_descriptor_hid_;
   // Buffer puts isp firmware.
   std::vector<char> firmware_buffer_;
+  // Firmware temp path.
+  base::FilePath temp_path_;
 };
 
 #endif  // SRC_MODEL_ONE_DEVICE_H_

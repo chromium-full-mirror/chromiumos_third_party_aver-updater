@@ -7,22 +7,30 @@
 #include <iostream>
 #include <memory>
 
+#include <base/files/file.h>
+#include <base/files/file_util.h>
+
 #include "utilities.h"
 #include "model_one_device.h"
 #include "model_two_device.h"
 
 namespace {
+const char kVideoImagePath[] = "/lib/firmware/aver/";
 const char kDefaultHidDeviceMountPoint[] = "../../sys/class/hidraw/";
 const char kDevPath[] = "/dev/";
 const char kVendorIdPath[] = "/device/../../idVendor";
 const char kProductIdPath[] = "/device/../../idProduct";
 const char kAverCAM520Name[] = "CAM520";
+const char kAverCAM540Name[] = "CAM540";
+const char kCAM520FwMidName[] = "";
+const char kNewCAM540FwMidName[] = "videoh.dat";
 
 constexpr unsigned int kDeviceVideo = 0;
 constexpr unsigned int kAVerVendorID = 0x2574;
 constexpr unsigned int kAVerCAM520ProductID = 0x0910;
 constexpr unsigned int kAVerCAM340PlusProductID = 0x0980;
 constexpr unsigned int kAVerCAM540ProductID = 0x0970;
+constexpr unsigned int kAVerNewCAM540ProductID = 0x09A0;
 
 template <typename T, typename... Ts>
 std::unique_ptr<T> make_unique(Ts&& ... params) {
@@ -30,38 +38,49 @@ std::unique_ptr<T> make_unique(Ts&& ... params) {
 }
 }  // namespace
 
-TargetDevice::TargetDevice() {}
+TargetDevice::TargetDevice()
+    : is_untar_file_necessary_(true) {}
 
 TargetDevice::~TargetDevice() {}
 
-bool TargetDevice::AddDevice(uint64_t which_device) {
-  int hid_type;
-  std::string device_name;
+bool TargetDevice::AddDevice() {
   for (auto it = product_info_.begin(); it != product_info_.end(); it++) {
-    // Target device may be a composite device with video and audio
-    // in the future. Product id will diff by one.
-    if (it->first != which_device && (it->first - 1) != which_device)
-      continue;
+    int hid_type;
+    std::string device_name;
+    std::string fw_mid_name;
 
     switch (it->first) {
       case kAVerCAM520ProductID:
         hid_type = kModelOneDevice;
         device_name = kAverCAM520Name;
+        fw_mid_name = kCAM520FwMidName;
+        is_untar_file_necessary_ = false;
+        break;
+      case kAVerNewCAM540ProductID:
+        hid_type = kModelOneDevice;
+        device_name = kAverCAM540Name;
+        fw_mid_name = kNewCAM540FwMidName;
         break;
       case kAVerCAM340PlusProductID:
       case kAVerCAM540ProductID:
         hid_type = kModelTwoDevice;
         break;
+      default:
+        hid_type = kModelUndefine;
+        break;
     }
 
     switch (hid_type) {
-        case kModelOneDevice:
-          devices_.push_back(make_unique<ModelOneDevice>(device_name,
-                                                         it->second));
-          break;
-        case kModelTwoDevice:
-          devices_.push_back(make_unique<ModelTwoDevice>(it->second));
-          break;
+      case kModelOneDevice:
+        devices_.push_back(make_unique<ModelOneDevice>(device_name,
+                                                       it->second,
+                                                       fw_mid_name));
+        break;
+      case kModelTwoDevice:
+        devices_.push_back(make_unique<ModelTwoDevice>(it->second));
+        break;
+      default:
+        break;
     }
   }
 
@@ -103,16 +122,28 @@ AverStatus TargetDevice::IsDeviceUpToDate(bool force) {
 }
 
 AverStatus TargetDevice::PerformUpdate() {
-  AverStatus status;
-  for (const auto& device : devices_) {
-    status = device->PerformUpdate();
+  AverStatus status = AverStatus::NO_ERROR;
+  if (is_untar_file_necessary_) {
+    status = UntarFirmware();
     if (status != AverStatus::NO_ERROR)
       return status;
   }
+
+  for (const auto& device : devices_) {
+    status = device->PerformUpdate(temp_path_);
+    if (status != AverStatus::NO_ERROR)
+      break;
+  }
+
+  if (is_untar_file_necessary_) {
+    if (!base::DeleteFile(temp_path_, true))
+        LOG(ERROR) << "Failed to delete untar firmware.";
+  }
+
   return status;
 }
 
-bool TargetDevice::FindHidDevice() {
+bool TargetDevice::FindHidDevicesByPid(uint64_t which_device) {
   std::vector<std::string> contents;
   bool get_ok = GetDirectoryContents(kDefaultHidDeviceMountPoint, &contents);
   if (!get_ok)
@@ -142,12 +173,34 @@ bool TargetDevice::FindHidDevice() {
     if (!ConvertHexStringToInt(pid, &pidnum))
       continue;
 
-    if (vidnum == kAVerVendorID)
-      product_info_[pidnum] = kDevPath + content;
+    if (vidnum == kAVerVendorID) {
+      // Target device may be a composite device with video and audio
+      if (pidnum == which_device || pidnum == (which_device + 1))
+        product_info_[pidnum] = kDevPath + content;
+    }
   }
 
   if (product_info_.empty())
     return false;
 
   return true;
+}
+
+AverStatus TargetDevice::UntarFirmware() {
+  std::string file_path = kVideoImagePath;
+  std::string firmware_version;
+  GetImageVersion(&firmware_version);
+  file_path.append(firmware_version);
+
+  if (!base::CreateNewTempDirectory("aver_updater_tmp_dir", &temp_path_)) {
+    LOG(ERROR) << "Failed to create temp directory.";
+    return AverStatus::FAILED_CREATE_TMP_PATH;
+  }
+
+  bool ok = false;
+  ok = ExtractTarFile(temp_path_, file_path);
+  if (!ok)
+    return AverStatus::FAILED_EXTRACT_COMPRESSED_FW;
+
+  return AverStatus::NO_ERROR;
 }

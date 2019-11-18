@@ -21,6 +21,8 @@ const char kDefaultVideoDeviceMountPoint[] = "/sys/class/video4linux/";
 const char kName[] = "/name";
 
 constexpr unsigned int kAVerFirmwareCompareCount = 9;
+constexpr unsigned int kAVerFirmwareSuffixLength = 15;
+constexpr unsigned int kAVerFirmwareExtensionLength = 3;
 constexpr unsigned int kDefaultUvcGetLenQueryControlSize = 2;
 }  // namespace
 
@@ -44,16 +46,19 @@ AverStatus UsbDevice::IsDeviceUpToDate(bool force) {
 
   LOG(INFO) << "Firmware version on the device:" << device_version_;
 
+  if (force)
+    return AverStatus::NO_ERROR;
+
   status = GetImageVersion(device_version_, &firmware_version_);
   if (status != AverStatus::NO_ERROR)
     return status;
 
   LOG(INFO) << "Latest firmware available:" << firmware_version_;
 
-  if (force)
-    return AverStatus::NO_ERROR;
+  std::string img_ver = firmware_version_.substr(firmware_version_.length() -
+                                                 kAVerFirmwareSuffixLength);
 
-  if (CompareVersions(device_version_, firmware_version_) < 0)
+  if (CompareVersions(device_version_, img_ver) < 0)
     return AverStatus::NO_ERROR;
 
   return AverStatus::FW_ALREADY_UPDATE;
@@ -74,9 +79,12 @@ AverStatus UsbDevice::GetImageVersion(const std::string& device_version,
 
   auto selected_file_it = files.end();
   for (auto it = files.begin(); it != files.end(); it++) {
-    if (it->substr(0, kAVerFirmwareCompareCount) != firmware_version_prefix) {
+    if (it->substr(0, 1) == "." || it->substr(0, 2) == "..")
       continue;
-    }
+
+    std::string img_ver = it->substr(it->length() - kAVerFirmwareSuffixLength);
+    if (img_ver.substr(0, kAVerFirmwareCompareCount) != firmware_version_prefix)
+        continue;
 
     if (selected_file_it == files.end() || *selected_file_it < *it) {
       selected_file_it = it;
@@ -87,15 +95,6 @@ AverStatus UsbDevice::GetImageVersion(const std::string& device_version,
     return AverStatus::DIR_CONTENT_ERR;
 
   *image_version = firmware_version_ = *selected_file_it;
-  return AverStatus::NO_ERROR;
-}
-
-AverStatus UsbDevice::DeleteUntarFw(const base::FilePath& tmp_path) {
-  if (!base::DeleteFile(tmp_path, true)) {
-    LOG(ERROR) << "Couldn't delete directory " << tmp_path.value();
-    return AverStatus::FAILED_DELETE_FW;
-  }
-
   return AverStatus::NO_ERROR;
 }
 
@@ -181,4 +180,9 @@ AverStatus UsbDevice::QueryDataSize(unsigned char unit_id,
   int size = (size_data[1] << 8) | (size_data[0]);
   *data_size = size;
   return AverStatus::NO_ERROR;
+}
+
+std::string UsbDevice::GetVersion(const std::string& fw_name) {
+  return fw_name.substr(fw_name.length() - kAVerFirmwareSuffixLength,
+           kAVerFirmwareSuffixLength - kAVerFirmwareExtensionLength);
 }

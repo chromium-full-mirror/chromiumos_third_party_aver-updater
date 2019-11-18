@@ -60,7 +60,8 @@ bool LockUpdater();
  * @param output Output string from reading.
  * @return true if read ok, false otherwise.
  */
-bool ReadFileContent(const base::FilePath& input_file_path, std::string* output);
+bool ReadFileContent(const base::FilePath& input_file_path,
+                     std::string* output);
 
 /**
  * @brief Converts hex string to int.
@@ -80,4 +81,13 @@ bool ConvertHexStringToInt(const std::string& hex_string, int* output_value);
 bool VerifyDeviceResponse(const std::vector<char>& hid_return_msg,
                           const std::string& isp_progress_word,
                           uint32_t start_position);
+
+/**
+ * @brief Compressed firmware untar.
+ * @param temp_path Temperary folder path.
+ * @param file_path Compressed file path.
+ * @return true if succeeded, error otherwise.
+ */
+bool ExtractTarFile(const base::FilePath& temp_path,
+                    const std::string& file_path);
 #endif  // SRC_UTILITIES_H_

@@ -120,12 +120,12 @@ int main(int argc, char** argv) {
 
   std::unique_ptr<TargetDevice> aver_device = make_unique<TargetDevice>();
 
-  if (!aver_device->FindHidDevice()) {
+  if (!aver_device->FindHidDevicesByPid(FLAGS_which_device)) {
     LOG(ERROR) << "Failed to find product id.";
     return 0;
   }
 
-  if (!aver_device->AddDevice(FLAGS_which_device)) {
+  if (!aver_device->AddDevice()) {
     LOG(ERROR) << "No matching product.";
     return 0;
   }

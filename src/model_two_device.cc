@@ -15,21 +15,19 @@
 #include "utilities.h"
 
 namespace {
-const char kVideoImagePath[] = "/lib/firmware/aver/";
 const char kImagePath[5][24] = {"update/cx3uvc.img",
                                 "update/RS_M12MO.bin",
                                 "update/strange_100.bin",
                                 "update/hawkeye_342.bin",
                                 "update/boot_fprog.boot",
                                };
-const char kFwVideoName[] = "video.";
+const char kFwVideoName[] = "video.dat";
 
 constexpr unsigned int kAVerReadDeviceVersionMaxRetry = 3;
 constexpr unsigned int kAVerReadDeviceVersionRetryIntervalMs = 500;
 constexpr unsigned int kReportIdCustomizeCmd = 0x08;
 constexpr unsigned int kMaxDataSize = 1024;
 constexpr unsigned int kReadDataSize = 16;
-constexpr unsigned int kAVerFirmwareCount = 12;
 constexpr unsigned int kAVerRebootingWaitSecond = 60;
 constexpr unsigned int kMcuStrangeI2cAddr = (0x2c << 1);
 constexpr unsigned int kMcuHawkeyeI2cAddr = (0x2e << 1);
@@ -136,44 +134,36 @@ AverStatus ModelTwoDevice::LoadFirmwareToBuffer() {
   for (int i = 0; i < device_fw_num_; i++) {
     base::FilePath file_path = temp_path_.Append(kImagePath[i]);
     if (!ReadFirmwareFileToBuffer(file_path, &firmware_buffer_[i])) {
-      DeleteUntarFw(temp_path_);
+      base::DeleteFile(temp_path_, true);
       return AverStatus::READ_FW_TO_BUF_FAILED;
     }
   }
 
-  status = DeleteUntarFw(temp_path_);
+  if (!base::DeleteFile(temp_path_, true))
+    LOG(ERROR) << "Failed to delete untar firmware.";
+
   return status;
 }
 
 AverStatus ModelTwoDevice::HandleCompressedFirmware() {
-  std::string file_path = kVideoImagePath;
-  GetImageVersion(device_version_, &firmware_version_);
-  file_path.append(firmware_version_);
-
-  if (!base::CreateNewTempDirectory("tmp_dir", &temp_path_)) {
-    LOG(ERROR) << "Failed to create temp directory.";
-    return AverStatus::FAILED_CREATE_TMP_PATH;
-  }
-
-  AverStatus status = ExtractTarFile(file_path);
-  if (status != AverStatus::NO_ERROR)
-    return status;
-
   // Check more device firmwares or not.
   bool ok = false;
-  std::string video_fw = firmware_version_;
-  video_fw.insert(kAVerFirmwareCount, kFwVideoName);
-  ok = FindIntermediateCompressedFile(temp_path_, video_fw);
+  std::string video_fw_tmp;
+  std::string ver = GetVersion(firmware_version_);
+  video_fw_tmp = ver + kFwVideoName;
+  ok = FindIntermediateCompressedFile(temp_path_, video_fw_tmp);
   if (ok) {
-    base::FilePath video_file_path = temp_path_.Append(video_fw);
-    status = ExtractTarFile(video_file_path.value().c_str());
+    base::FilePath video_file_path = temp_path_.Append(video_fw_tmp);
+    ok = ExtractTarFile(temp_path_, video_file_path.value().c_str());
     device_fw_num_ = kDeviceFwNumFive;
   } else
     device_fw_num_ = kDeviceFwNumTwo;
-  return status;
+
+  return AverStatus::NO_ERROR;
 }
 
-AverStatus ModelTwoDevice::PerformUpdate() {
+AverStatus ModelTwoDevice::PerformUpdate(const base::FilePath& tmp_path) {
+  temp_path_ = tmp_path;
   AverStatus status = LoadFirmwareToBuffer();
   if (status != AverStatus::NO_ERROR)
     return status;
@@ -422,48 +412,6 @@ AverStatus ModelTwoDevice::IspUpload(uint8_t cmd,
     offset += block_size;
     isp_file_size -= block_size;
   }
-
-  return AverStatus::NO_ERROR;
-}
-
-AverStatus ModelTwoDevice::ExtractTarFile(const std::string& file_path) {
-  struct archive* a;
-  struct archive_entry* entry;
-  int r;
-
-  a = archive_read_new();
-  archive_read_support_filter_all(a);
-  archive_read_support_format_all(a);
-  r = archive_read_open_filename(a, file_path.c_str(), 10240);
-  if (r != ARCHIVE_OK)
-    return AverStatus::READ_COMPRESSED_FW_FAILED;
-
-  while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
-    const char* fw_name;
-    std::string command;
-
-    /* no output file */
-    if (archive_entry_pathname(entry) == NULL)
-      return AverStatus::READ_COMPRESSED_FW_FAILED;
-
-    /* update output path */
-    fw_name = archive_entry_pathname(entry);
-    base::FilePath tmp_path = temp_path_.Append(fw_name);
-    bool vaild =
-      archive_entry_update_pathname_utf8(entry, tmp_path.value().c_str());
-    if (!vaild)
-      continue;
-
-    r = archive_read_extract(a, entry, 0);
-    if (r != ARCHIVE_OK) {
-      LOG(ERROR) << "Failed to read extract.";
-      return AverStatus::FAILED_EXTRACT_COMPRESSED_FW;
-    }
-  }
-  r = archive_read_free(a);
-
-  if (r != ARCHIVE_OK)
-    return AverStatus::FAILED_EXTRACT_COMPRESSED_FW;
 
   return AverStatus::NO_ERROR;
 }

@@ -4,18 +4,25 @@
 
 # CAM520 device rule
 SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
-DEVPATH=="*:2574:0910*", \
+ATTRS{idVendor}=="2574", ATTRS{idProduct}=="0910", \
 OWNER="cfm-firmware-updaters", GROUP="cfm-firmware-updaters", MODE="0664", \
 RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2320"
 
 # CAM340+ device rule
 SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
-DEVPATH=="*:2574:0980*", \
+ATTRS{idVendor}=="2574", ATTRS{idProduct}=="0980", \
 OWNER="cfm-firmware-updaters", GROUP="cfm-firmware-updaters", MODE="0664", \
 RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2432"
 
 # CAM540 device rule
 SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
-DEVPATH=="*:2574:0970*", \
+ATTRS{idVendor}=="2574", ATTRS{idProduct}=="0970", \
 OWNER="cfm-firmware-updaters", GROUP="cfm-firmware-updaters", MODE="0664", \
 RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2416"
+
+# New CAM540 device rule
+SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
+ATTRS{idVendor}=="2574", ATTRS{idProduct}=="09A0", \
+OWNER="cfm-firmware-updaters", GROUP="cfm-firmware-updaters", MODE="0664", \
+RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2464"
+

@@ -24,3 +24,14 @@ CXX_BINARY($(BINARY_NAME)): \
 	src/target_device.o \
 
 clean: CLEAN(CXX_BINARY($(BINARY_NAME)))
+
+UNITTEST_LIBS := -lgtest -pthread -lpthread
+
+CXX_BINARY(utilities-unittest): LDLIBS += $(UNITTEST_LIBS)
+CXX_BINARY(utilities-unittest): \
+	src/utilities.o \
+	src/utilities_unittest.o \
+	src/testrunner.o
+
+tests: TEST(CXX_BINARY(utilities-unittest))
+clean: CLEAN(CXX_BINARY(utilities-unittest))

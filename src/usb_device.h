@@ -51,7 +51,8 @@ enum class AverStatus {
  */
 enum AverHidDevice {
   kModelOneDevice = 0,
-  kModelTwoDevice
+  kModelTwoDevice,
+  kModelUndefine
 };
 
 /**
@@ -73,9 +74,10 @@ class UsbDevice {
 
   /**
    * @brief Performs firmware update.
+   * @param tmp_path Temporary folder path.
    * @return NO_ERROR if updated ok, error code otherwise.
    */
-  virtual AverStatus PerformUpdate() = 0;
+  virtual AverStatus PerformUpdate(const base::FilePath& tmp_path) = 0;
 
   /**
    * @brief Gets the device version.
@@ -113,14 +115,13 @@ class UsbDevice {
    */
   base::ScopedFD CreateFd(const std::string& device_path);
 
- protected:
   /**
-   * @brief Delete untar firmware in /tmp.
-   * @param tmp_path Temporary untar file path.
-   * @return NO_ERROR if succeeded, error otherwise.
-   */
-  AverStatus DeleteUntarFw(const base::FilePath& tmp_path);
+　 * @brief Re-combine firmware name.
+   * @return Firmware version string.
+　 */
+  std::string GetVersion(const std::string& firmware_name);
 
+ protected:
   /**
    * @brief Finds the uvc device.
    * @param device_name Device name.

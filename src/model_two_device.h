@@ -126,9 +126,10 @@ class ModelTwoDevice : public UsbDevice {
 
   /**
    * @brief Performs firmware update.
+   * @param tmp_path Temporary folder path.
    * @return NO_ERROR if updated ok, error code otherwise.
    */
-  AverStatus PerformUpdate() override;
+  AverStatus PerformUpdate(const base::FilePath& tmp_path) override;
 
  private:
   /**
@@ -211,13 +212,6 @@ class ModelTwoDevice : public UsbDevice {
                                 uint32_t i2c_address,
                                 uint32_t chip_select,
                                 const std::vector<char>& buffer);
-
-  /**
-   * @brief Compressed firmware untar.
-   * @param file_path Compressed file path.
-   * @return NO_ERROR if succeeded, error otherwise.
-   */
-  AverStatus ExtractTarFile(const std::string& file_path);
 
   /**
    * @brief Firmware Update.

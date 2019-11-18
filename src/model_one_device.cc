@@ -27,18 +27,19 @@ constexpr unsigned int kAVerFirmwareCount = 12;
 constexpr unsigned int kReceiveDataStartPosition = 2;
 constexpr unsigned int kAVerAudioImageBlockSize = 508;
 constexpr unsigned int kReportIdCustomizeCmd = 0x08;
-constexpr unsigned int kReceiveStartIspStartPosThree = 3;
-constexpr unsigned int kReceiveStartIspStartPosTwo = 2;
+constexpr unsigned int kReceiveStartIspStartPosCount = 4;
 constexpr unsigned int kAVerXuOne = 5;
 constexpr unsigned int kUvcxUcamFwVersion = 0x14;
 constexpr unsigned int kRebootingWaitTwoMinutes = 120;
 }  // namespace
 
 ModelOneDevice::ModelOneDevice(const std::string& device_name,
-                               const std::string& dev_path) :
+                               const std::string& dev_path,
+                               const std::string& fw_name_suffix) :
   UsbDevice(),
   device_name_(device_name),
-  device_path_(dev_path) {}
+  device_path_(dev_path),
+  firmware_middle_name_(fw_name_suffix) {}
 
 ModelOneDevice::~ModelOneDevice() {
   if (file_descriptor_hid_.is_valid())
@@ -135,7 +136,6 @@ AverStatus ModelOneDevice::IspFileStart() {
   customize_cmd.isp_cmd = UVCX_UCAM_ISP_FILE_START;
   std::string fw_name;
   fw_name.append(firmware_version_);
-  LOG(INFO) << "FW:" << firmware_version_;
   fw_name.insert(kAVerFirmwareCount, kFwAudioName);
   memcpy(customize_cmd.dat, fw_name.c_str(), fw_name.size());
   AverStatus status = SendHidVerOneControl(customize_cmd);
@@ -228,13 +228,14 @@ AverStatus ModelOneDevice::IspStart() {
     return status;
   }
 
-  bool ok_3 = VerifyDeviceResponse(hid_return_msg_,
-                                   kIspStartAck,
-                                   kReceiveStartIspStartPosThree);
-  bool ok_2 = VerifyDeviceResponse(hid_return_msg_,
-                                   kIspStartAck,
-                                   kReceiveStartIspStartPosTwo);
-  if (!(ok_3 || ok_2)) {
+  bool ok = false;
+  for (int i = 1; !ok && i < kReceiveStartIspStartPosCount; i++) {
+    ok = VerifyDeviceResponse(hid_return_msg_,
+                              kIspStartAck,
+                              i);
+  }
+
+  if (!ok) {
     LOG(ERROR) << "Failed to start update follow in the device.";
     return AverStatus::ISP_START_HID_CMD_COMPARE_FAILED;
   }
@@ -268,13 +269,22 @@ AverStatus ModelOneDevice::LoadFirmwareToBuffer() {
   AverStatus status = GetImageVersion(device_version_, &image_version);
 
   base::FilePath input_file_path(kVideoImagePath + image_version);
+  // Need to get firmware name in temporary folder.
+  if (base::PathExists(temp_path_)) {
+    std::string img_ver;
+    std::string ver = GetVersion(image_version);
+    img_ver = ver + firmware_middle_name_;
+    input_file_path = temp_path_.Append(img_ver);
+  }
+
   if (!ReadFirmwareFileToBuffer(input_file_path, &firmware_buffer_))
     return AverStatus::READ_FW_TO_BUF_FAILED;
 
   return status;
 }
 
-AverStatus ModelOneDevice::PerformUpdate() {
+AverStatus ModelOneDevice::PerformUpdate(const base::FilePath& tmp_path) {
+  temp_path_ = tmp_path;
   AverStatus status = LoadFirmwareToBuffer();
   if (status != AverStatus::NO_ERROR)
     return status;

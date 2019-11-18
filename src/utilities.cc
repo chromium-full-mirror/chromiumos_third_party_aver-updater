@@ -10,6 +10,9 @@
 #include <iostream>
 #include <sstream>
 
+#include <archive.h>
+#include <archive_entry.h>
+
 #include <base/files/dir_reader_posix.h>
 #include <base/files/file.h>
 #include <base/files/file_util.h>
@@ -21,6 +24,7 @@
 namespace {
 const char kAverLockFile[] = "/run/lock/aver-updater.lock";
 const char kVersionNumberTokens[] = "0123456789.";
+const char kHexNumberTokens[] = "0123456789abcdef\n";
 
 constexpr unsigned int kDefaultVersionComponentCount = 4;
 
@@ -94,10 +98,13 @@ int CompareVersions(const std::string& version1, const std::string& version2) {
       if (second_version == 0)
         return 1;
     }
-    if (first_version > second_version)
-      return 1;
-    if (first_version < second_version)
-      return -1;
+
+    if (first_version != second_version) {
+      if (i < kDefaultVersionComponentCount - 1)
+        return 1;
+      else
+        return (first_version < second_version)? -1 : 0;
+    }
   }
   return 0;
 }
@@ -140,6 +147,8 @@ bool ReadFileContent(const base::FilePath& input_file_path,
 bool ConvertHexStringToInt(const std::string& hex_string, int* output_value) {
   if (hex_string.empty())
     return false;
+  if (hex_string.find_first_not_of(kHexNumberTokens) != hex_string.npos)
+    return false;
   std::stringstream string_stream;
   string_stream << std::hex << hex_string;
   unsigned int hex_number;
@@ -163,4 +172,47 @@ bool VerifyDeviceResponse(const std::vector<char>& hid_return_msg,
     return true;
   else
     return false;
+}
+
+bool ExtractTarFile(const base::FilePath& temp_path,
+                    const std::string& file_path) {
+  struct archive* a;
+  struct archive_entry* entry;
+  int r;
+
+  a = archive_read_new();
+  archive_read_support_filter_all(a);
+  archive_read_support_format_all(a);
+  r = archive_read_open_filename(a, file_path.c_str(), 10240);
+  if (r != ARCHIVE_OK)
+    return false;
+
+  while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
+    const char* fw_name;
+    std::string command;
+
+    /* no output file */
+    if (archive_entry_pathname(entry) == NULL)
+      return false;
+
+    /* update output path */
+    fw_name = archive_entry_pathname(entry);
+    base::FilePath tmp_path = temp_path.Append(fw_name);
+    bool vaild =
+      archive_entry_update_pathname_utf8(entry, tmp_path.value().c_str());
+    if (!vaild)
+      continue;
+
+    r = archive_read_extract(a, entry, 0);
+    if (r != ARCHIVE_OK) {
+      LOG(ERROR) << "Failed to read extract.";
+      return false;
+    }
+  }
+  r = archive_read_free(a);
+
+  if (r != ARCHIVE_OK)
+    return false;
+
+  return true;
 }

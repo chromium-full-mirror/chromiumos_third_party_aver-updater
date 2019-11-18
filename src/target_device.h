@@ -23,10 +23,9 @@ class TargetDevice {
 
   /**
    * @brief Add device to this class.
-   * @param which_device Which aver device plug-in.
    * @return true for find product id, false for failed.
    */
-  bool AddDevice(uint64_t which_device);
+  bool AddDevice();
 
   /**
    * @brief Opens device.
@@ -63,14 +62,25 @@ class TargetDevice {
 
   /**
    * @brief Finds the hid device product and device path.
+   * @param which_device Which aver device plug-in.
    * @return true for find product id, false for failed.
    */
-  bool FindHidDevice();
+  bool FindHidDevicesByPid(uint64_t which_device);
+
+  /**
+   * @brief Untar firmware.
+   * @return NO_ERROR if updated ok, error code otherwise.
+   */
+  AverStatus UntarFirmware();
 
  private:
   // Product id & hid device path
   std::map<int, std::string> product_info_;
   // Devices for video, audio and etc..
   std::vector<std::unique_ptr<UsbDevice>> devices_;
+  // Firmware temp path.
+  base::FilePath temp_path_;
+  // need untar firmware file or not
+  bool is_untar_file_necessary_;
 };
 #endif  // SRC_TARGET_DEVICE_H_
