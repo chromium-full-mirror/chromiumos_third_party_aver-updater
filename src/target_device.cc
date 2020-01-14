@@ -32,10 +32,6 @@ constexpr unsigned int kAVerCAM340PlusProductID = 0x0980;
 constexpr unsigned int kAVerCAM540ProductID = 0x0970;
 constexpr unsigned int kAVerNewCAM540ProductID = 0x09A0;
 
-template <typename T, typename... Ts>
-std::unique_ptr<T> make_unique(Ts&& ... params) {
-  return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
-}
 }  // namespace
 
 TargetDevice::TargetDevice()
@@ -72,12 +68,11 @@ bool TargetDevice::AddDevice() {
 
     switch (hid_type) {
       case kModelOneDevice:
-        devices_.push_back(make_unique<ModelOneDevice>(device_name,
-                                                       it->second,
-                                                       fw_mid_name));
+        devices_.push_back(std::make_unique<ModelOneDevice>(
+            device_name, it->second, fw_mid_name));
         break;
       case kModelTwoDevice:
-        devices_.push_back(make_unique<ModelTwoDevice>(it->second));
+        devices_.push_back(std::make_unique<ModelTwoDevice>(it->second));
         break;
       default:
         break;
