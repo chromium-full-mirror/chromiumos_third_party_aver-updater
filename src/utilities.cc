@@ -100,10 +100,7 @@ int CompareVersions(const std::string& version1, const std::string& version2) {
     }
 
     if (first_version != second_version) {
-      if (i < kDefaultVersionComponentCount - 1)
-        return 1;
-      else
-        return (first_version < second_version)? -1 : 0;
+      return first_version - second_version;
     }
   }
   return 0;

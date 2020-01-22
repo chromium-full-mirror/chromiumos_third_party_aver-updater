@@ -20,7 +20,7 @@ const char kVideoImagePath[] = "/lib/firmware/aver/";
 const char kDefaultVideoDeviceMountPoint[] = "/sys/class/video4linux/";
 const char kName[] = "/name";
 
-constexpr unsigned int kAVerFirmwareCompareCount = 9;
+constexpr unsigned int kAVerFirmwareCompareCount = 6;
 constexpr unsigned int kAVerFirmwareSuffixLength = 15;
 constexpr unsigned int kAVerFirmwareExtensionLength = 3;
 constexpr unsigned int kDefaultUvcGetLenQueryControlSize = 2;
