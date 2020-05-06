@@ -113,17 +113,17 @@ TEST_F(UtilsTest, CompareVersionsReturnZero) {
     EXPECT_EQ(0, CompareVersions("0.0.0000.00", "0.0.0000.00"));
 }
 
-TEST_F(UtilsTest, CompareVersionsReturnOne) {
-    EXPECT_EQ(1, CompareVersions("", "0.0.1000.22"));
-    EXPECT_EQ(1, CompareVersions("0.0.1000.22", ""));
-    EXPECT_EQ(1, CompareVersions("5.0.1000.22", "0.0.1000.22"));
-    EXPECT_EQ(1, CompareVersions("0.4.1000.22", "0.0.1000.22"));
-    EXPECT_EQ(1, CompareVersions("0.0.1234.22", "0.0.1000.22"));
+TEST_F(UtilsTest, CompareVersionsReturnPositive) {
+    EXPECT_EQ(1000, CompareVersions("0.0.1000.22", ""));
+    EXPECT_EQ(5, CompareVersions("5.0.1000.22", "0.0.1000.22"));
+    EXPECT_EQ(4, CompareVersions("0.4.1000.22", "0.0.1000.22"));
+    EXPECT_EQ(234, CompareVersions("0.0.1234.22", "0.0.1000.22"));
 }
 
-TEST_F(UtilsTest, CompareVersionsReturnNegativeOne) {
-    EXPECT_EQ(-1, CompareVersions("0.0.1000.20", "0.0.1000.22"));
-    EXPECT_EQ(-1, CompareVersions("0.0.6002.55", "0.0.6002.58"));
+TEST_F(UtilsTest, CompareVersionsReturnNegative) {
+    EXPECT_EQ(-1000, CompareVersions("", "0.0.1000.22"));
+    EXPECT_EQ(-2, CompareVersions("0.0.1000.20", "0.0.1000.22"));
+    EXPECT_EQ(-3, CompareVersions("0.0.6002.55", "0.0.6002.58"));
     EXPECT_EQ(-1, CompareVersions("0.0.0018.19", "0.0.0018.20"));
 }
 
