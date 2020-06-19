@@ -2,27 +2,37 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# CAM520 UVC device rule
+SUBSYSTEM=="video4linux", ACTION=="add", KERNEL=="video*",  \
+ATTRS{idVendor}=="2574", ATTRS{idProduct}=="0910", \
+OWNER="cfm-firmware-updaters", GROUP="video", MODE="0664"
+
 # CAM520 device rule
 SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
 ATTRS{idVendor}=="2574", ATTRS{idProduct}=="0910", \
-OWNER="cfm-firmware-updaters", GROUP="cfm-firmware-updaters", MODE="0664", \
+OWNER="cfm-firmware-updaters", GROUP="hidraw", MODE="0664", \
 RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2320"
 
 # CAM340+ device rule
 SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
 ATTRS{idVendor}=="2574", ATTRS{idProduct}=="0980", \
-OWNER="cfm-firmware-updaters", GROUP="cfm-firmware-updaters", MODE="0664", \
+OWNER="cfm-firmware-updaters", GROUP="hidraw", MODE="0664", \
 RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2432"
 
 # CAM540 device rule
 SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
 ATTRS{idVendor}=="2574", ATTRS{idProduct}=="0970", \
-OWNER="cfm-firmware-updaters", GROUP="cfm-firmware-updaters", MODE="0664", \
+OWNER="cfm-firmware-updaters", GROUP="hidraw", MODE="0664", \
 RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2416"
+
+# New CAM540 UVC device rule
+SUBSYSTEM=="video4linux", ACTION=="add", KERNEL=="video*",  \
+ATTRS{idVendor}=="2574", ATTRS{idProduct}=="09a0", \
+OWNER="cfm-firmware-updaters", GROUP="video", MODE="0664"
 
 # New CAM540 device rule
 SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
-ATTRS{idVendor}=="2574", ATTRS{idProduct}=="09A0", \
-OWNER="cfm-firmware-updaters", GROUP="cfm-firmware-updaters", MODE="0664", \
+ATTRS{idVendor}=="2574", ATTRS{idProduct}=="09a0", \
+OWNER="cfm-firmware-updaters", GROUP="hidraw", MODE="0664", \
 RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2464"
 
