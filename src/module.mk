@@ -6,7 +6,7 @@ include common.mk
 
 BINARY_NAME := aver-updater
 
-PC_DEPS = libbrillo-$(BASE_VER) libchrome-$(BASE_VER) libarchive
+PC_DEPS = libbrillo libchrome-$(BASE_VER) libarchive
 PC_CFLAGS := $(shell $(PKG_CONFIG) --cflags $(PC_DEPS))
 PC_LIBS := $(shell $(PKG_CONFIG) --libs $(PC_DEPS))
 LDLIBS += $(PC_LIBS)
