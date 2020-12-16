@@ -131,7 +131,7 @@ AverStatus TargetDevice::PerformUpdate() {
   }
 
   if (is_untar_file_necessary_) {
-    if (!base::DeleteFile(temp_path_, true))
+    if (!base::DeletePathRecursively(temp_path_))
         LOG(ERROR) << "Failed to delete untar firmware.";
   }
 

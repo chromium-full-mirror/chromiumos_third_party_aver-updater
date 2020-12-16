@@ -48,7 +48,7 @@ TEST_F(UtilsTest, ReadFileContentReturnTrueAndStringEq) {
   std::string file_content;
   EXPECT_TRUE(ReadFileContent(test_file, &file_content));
   EXPECT_EQ(0, file_content.compare("test"));
-  ASSERT_TRUE(base::DeleteFile(file_path, true));
+  ASSERT_TRUE(base::DeletePathRecursively(file_path));
 }
 
 TEST_F(UtilsTest, ReadFileContentReturnFalse) {
@@ -61,7 +61,7 @@ TEST_F(UtilsTest, ReadFileContentReturnFalse) {
   std::string file_content;
   EXPECT_FALSE(ReadFileContent(empty_path, &file_content));
   EXPECT_FALSE(ReadFileContent(test_file, &file_content));
-  ASSERT_TRUE(base::DeleteFile(file_path, true));
+  ASSERT_TRUE(base::DeletePathRecursively(file_path));
 }
 
 TEST_F(UtilsTest, VerifyDeviceResponseReturnTrue) {

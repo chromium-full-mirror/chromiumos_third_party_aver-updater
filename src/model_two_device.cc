@@ -134,12 +134,12 @@ AverStatus ModelTwoDevice::LoadFirmwareToBuffer() {
   for (int i = 0; i < device_fw_num_; i++) {
     base::FilePath file_path = temp_path_.Append(kImagePath[i]);
     if (!ReadFirmwareFileToBuffer(file_path, &firmware_buffer_[i])) {
-      base::DeleteFile(temp_path_, true);
+      base::DeletePathRecursively(temp_path_);
       return AverStatus::READ_FW_TO_BUF_FAILED;
     }
   }
 
-  if (!base::DeleteFile(temp_path_, true))
+  if (!base::DeletePathRecursively(temp_path_))
     LOG(ERROR) << "Failed to delete untar firmware.";
 
   return status;
