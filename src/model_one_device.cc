@@ -10,6 +10,7 @@
 
 #include <base/files/file.h>
 #include <base/files/file_util.h>
+#include <base/logging.h>
 
 #include "utilities.h"
 
