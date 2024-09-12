@@ -1,4 +1,4 @@
-# Copyright 2018 The Chromium OS Authors. All rights reserved.
+# Copyright 2018 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,18 +6,6 @@
 SUBSYSTEM=="video4linux", ACTION=="add", KERNEL=="video*",  \
 ATTRS{idVendor}=="2574", ATTRS{idProduct}=="0910", \
 OWNER="cfm-firmware-updaters", GROUP="video", MODE="0664"
-
-# CAM520 device rule
-SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
-ATTRS{idVendor}=="2574", ATTRS{idProduct}=="0910", \
-OWNER="cfm-firmware-updaters", GROUP="hidraw", MODE="0664", \
-RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2320"
-
-# CAM340+ device rule
-SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
-ATTRS{idVendor}=="2574", ATTRS{idProduct}=="0980", \
-OWNER="cfm-firmware-updaters", GROUP="hidraw", MODE="0664", \
-RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2432"
 
 # CAM540 device rule
 SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
@@ -35,4 +23,3 @@ SUBSYSTEM=="hidraw", ACTION=="add", KERNEL=="hidraw*",  \
 ATTRS{idVendor}=="2574", ATTRS{idProduct}=="09a0", \
 OWNER="cfm-firmware-updaters", GROUP="hidraw", MODE="0664", \
 RUN+="/sbin/minijail0 -e -i -I -v -r -n -p -u cfm-firmware-updaters -g cfm-firmware-updaters /usr/sbin/aver-updater --update=true --which_device=2464"
-
