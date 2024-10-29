@@ -59,12 +59,13 @@ bool FindIntermediateCompressedFile(const base::FilePath& folder,
 
 bool ReadFirmwareFileToBuffer(const base::FilePath& file_path,
                               std::vector<char>* buffer) {
-  int64_t size_of_file;
-  if (!base::GetFileSize(file_path, &size_of_file)) {
+  std::optional<int64_t> raw_size = base::GetFileSize(file_path);
+  if (!raw_size.has_value()) {
     LOG(ERROR) << "Can't get firmware file size.";
     return false;
   }
 
+  int64_t size_of_file = raw_size.value();
   std::vector<char> buf(size_of_file);
   if (base::ReadFile(file_path, buf.data(), size_of_file) < 0) {
     LOG(ERROR) << "Read firmware file to buffer failed.";
