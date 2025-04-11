@@ -3,3 +3,6 @@
 # found in the LICENSE file.
 
 include common.mk
+
+# TODO: Re-enable these warnings.
+CXXFLAGS += -Wno-implicit-fallthrough

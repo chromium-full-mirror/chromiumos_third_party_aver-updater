@@ -312,8 +312,7 @@ endif
 #  CXXFLAGS := $(filter-out badflag,$(CXXFLAGS)) # Filter out a value
 # The same goes for CFLAGS.
 COMMON_CFLAGS-gcc := -fvisibility=internal -ggdb3 -Wa,--noexecstack
-# aver-updater: Disable -Wimplicit-fallthrough to unbreak compilation.
-COMMON_CFLAGS-clang := -fvisibility=hidden -ggdb \
+COMMON_CFLAGS-clang := -fvisibility=hidden -ggdb -Wimplicit-fallthrough \
   -Wstring-plus-int
 # When a class is exported through __attribute__((visibility("default"))), we
 # still want to eliminate symbols from inline class member functions to reduce
