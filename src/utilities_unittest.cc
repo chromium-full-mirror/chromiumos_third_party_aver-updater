@@ -44,7 +44,7 @@ TEST_F(UtilsTest, DISABLED_ReadFileContentReturnTrueAndStringEq) {
   ASSERT_TRUE(base::CreateNewTempDirectory("aver_test_tmp_dir", &file_path));
 
   base::FilePath test_file = file_path.Append("test.txt");
-  ASSERT_TRUE(WriteFile(test_file, "test", 4));
+  ASSERT_TRUE(base::WriteFile(test_file, "test"));
 
   std::string file_content;
   EXPECT_TRUE(ReadFileContent(test_file, &file_content));
