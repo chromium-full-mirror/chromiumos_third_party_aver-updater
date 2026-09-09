@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <base/logging.h>
+#include <base/logging/logging_settings.h>
 #include <brillo/flag_helper.h>
 #include <brillo/syslog_logging.h>
 
